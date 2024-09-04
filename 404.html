@@ -17,15 +17,16 @@
 </head>
 <body>
   <section id="install-notice">
-    We are going to simulate installing and uninstalling a web application
-    in the browser. To do that, enable logs from service workers to be shown
-    and click on install button.
+    Install installs a service worker.
+    After that, you can access pages in the archive.
+    Each tar.gz would be downloaded once on first access and would be available
+    offline.
     <button id="install">Install</button>
   </section>
 
   <section id="control" hidden>
-    Now you can go offline, restart the browser and check how the page
-    continues working. Once you convince yourself, click on uninstall.
+    Now the browser is serving a service worker.
+    You can see logs on this page.
     <button id="uninstall">Uninstall</button>
   </section>
 

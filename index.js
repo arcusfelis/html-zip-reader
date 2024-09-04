@@ -1,4 +1,5 @@
 let worker_path = 'https://arcusfelis.github.io/html-zip-reader/worker.js';
+const autoMode = (document.location.href != "https://arcusfelis.github.io/html-zip-reader/main.html");
 
 const swListener = new BroadcastChannel('swListener');
 swListener.onmessage = function(e) {
@@ -32,16 +33,18 @@ navigator.serviceWorker.oncontrollerchange = function() {
   }
 };
 
-// Install the worker is no more than registering. It is in charge of
-// downloading the package, decompress and cache the resources.
-$('#install').onclick = function() {
+function doInstall() {
   navigator.serviceWorker.register(worker_path).then(function() {
     logInstall('Installing...');
   }).catch(function(error) {
     logInstall('An error happened during installing the service worker:');
     logInstall(error.message);
   });
-};
+}
+
+// Install the worker is no more than registering. It is in charge of
+// downloading the package, decompress and cache the resources.
+$('#install').onclick = doInstall;
 
 // Uninstalling the worker is simply unregistering it. Notice this
 // wont erase the offline cache so the resources are actually still
@@ -65,6 +68,7 @@ $('#uninstall').onclick = function() {
 function showControl() {
   $('#control').hidden = false;
   $('#install-notice').hidden = true;
+  if (autoMode) document.location.reload();
 }
 
 function logInstall(what) {
@@ -79,4 +83,8 @@ function log(what, tag) {
   var label = '[' + tag + ']';
   console.log(label, what);
   $('#results').textContent += label + ' ' + what + '\n';
+}
+
+if (autoMode) {
+  doInstall();
 }
