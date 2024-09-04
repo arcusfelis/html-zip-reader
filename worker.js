@@ -12,7 +12,7 @@ const ZIP_PREFIX = 'https://circleci-mim-results.s3.eu-central-1.amazonaws.com/'
 const swListener = new BroadcastChannel('swListener');
 swListener.postMessage("Importing scripts");
 
-const SCOPE = "https://arcusfelis.github.io/html-zip-reader";
+const SCOPE = "https://esl.github.io/html-zip-reader";
 
 importScripts(SCOPE + '/lib/tar-web.js');
 importScripts(SCOPE + '/lib/readable-web-to-node-stream.js');

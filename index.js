@@ -1,5 +1,5 @@
-let worker_path = 'https://arcusfelis.github.io/html-zip-reader/worker.js';
-const autoMode = (document.location.href != "https://arcusfelis.github.io/html-zip-reader/main.html");
+let worker_path = 'https://esl.github.io/html-zip-reader/worker.js';
+const autoMode = (document.location.href != "https://esl.github.io/html-zip-reader/main.html");
 
 const swListener = new BroadcastChannel('swListener');
 swListener.onmessage = function(e) {
