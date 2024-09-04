@@ -195,20 +195,17 @@ function fetchStream2(stream, fulfill, dir, cache) {
     // Result objects contain two properties:
     // done  - true if the stream has already given you all its data.
     // value - some data. Always undefined when done is true.
-    if (done) {
-      console.log("Stream complete");
-      fulfill({parts, putPromises});
-      return;
-    }
 
-    // value for fetch streams is a Uint8Array
-    bytesReceived += value.length;
-    absOffset += value.length;
 //  console.log("get chunk " + value.length);
 
-    chunks.push(value);
+    if (value) {
+      chunks.push(value);
+      // value for fetch streams is a Uint8Array
+      bytesReceived += value.length;
+      absOffset += value.length;
+    }
 
-    if (bytesReceived > PART_SIZE) {
+    if (((bytesReceived > PART_SIZE) || done) && bytesReceived) {
       // split logic
       console.log("Part received partSize=" + bytesReceived + " partOffset=" + partOffset);
       parts.push({size: bytesReceived, offset: partOffset});
@@ -219,6 +216,12 @@ function fetchStream2(stream, fulfill, dir, cache) {
       chunks = [];
       bytesReceived = 0;
       partOffset = absOffset;
+    }
+
+    if (done) {
+      console.log("Stream complete");
+      fulfill({parts, putPromises});
+      return;
     }
 
     // Read some more, and call this function again
