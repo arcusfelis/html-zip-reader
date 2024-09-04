@@ -1,17 +1,6 @@
 // for debug
 const forceDownload = false;
 
-/* global importScripts, zip */
-/*
-*/
-
-//importScripts('./lib/zip.js');
-//importScripts('./lib/ArrayBufferReader.js');
-//importScripts('./lib/deflate.js');
-//importScripts('./lib/inflate.js');
-
-
-
 //var ZIP_URL = './big3.tar.gz';
 //var ZIP_URL = './ct_report.tar.gz';
 //var ZIP_URL = 'https://circleci-mim-results.s3.eu-central-1.amazonaws.com/PR/4367/236734/elasticsearch_and_cassandra_mnesia.27.0.1-amd64/big.tar.gz';
@@ -23,10 +12,6 @@ const ZIP_PREFIX = 'https://circleci-mim-results.s3.eu-central-1.amazonaws.com/'
 const swListener = new BroadcastChannel('swListener');
 swListener.postMessage("Importing scripts");
 
-//importScripts('./lib/web-streams-polyfill.min.js');
-//importScripts('./lib/zip-no-worker.min.js');
-//importScripts('./lib/zip-full.min.js');
-
 const SCOPE = "https://arcusfelis.github.io/html-zip-reader";
 
 importScripts(SCOPE + '/lib/tar-web.js');
@@ -35,17 +20,6 @@ importScripts(SCOPE + '/lib/blob-stream.js');
 
 //zip.configure({useWebWorkers: false, useCompressionStream: true});
 swListener.postMessage("Scripts imported");
-
-/*
-let call = 0;
-BlobStream.prototype._write_orig = BlobStream.prototype._write;
-BlobStream.prototype._write = function(chunk, encoding, callback) {
-//if (!call)
-    console.log("chunk1 " + chunk.length);
-  call++;
-  return this._write_orig(chunk, encoding, callback);
-}
-*/
 
 function mergeArrays(myArrays) {
 if (myArrays.length == 0) return "";
@@ -70,7 +44,7 @@ return mergedArray;
 // During installation, extend the event to recover the package
 // for this recipe and install into an offline cache.
 self.oninstall = function(event) {
-  console.log("worker.path=" + self.location.href);
+  swLog("worker.path=" + self.location.href);
   const skip = self.skipWaiting.bind(self);
   caches.keys().then(function(names) {
       const promises = [];
@@ -86,14 +60,19 @@ function dirname(path) {
   return path.substring(0, path.lastIndexOf("/")+1);
 }
 
+function swLog(msg) {
+  console.log(msg);
+  swListener.postMessage(msg);
+}
+
 async function downloadZip(dir, cache, tarPath) {
   const startTime = performance.now();
-  swListener.postMessage("Downloading zip");
+  swLog("Downloading zip");
 //  const response = await fetch(ZIP_URL);
 
   const response = await fetch(ZIP_PREFIX + tarPath);
   const body = await response.body;
-  swListener.postMessage("Downloaded zip");
+  swLog("Downloaded zip");
   const ds = new DecompressionStream("gzip");
   const decompressedStream = body.pipeThrough(ds);
   
@@ -105,10 +84,10 @@ async function downloadZip(dir, cache, tarPath) {
   const files = await fetchTarPromise;
   const {parts, putPromises} = await chunksReadyPromise;
   await Promise.all(putPromises);
-  console.log("Parts " + parts.length);
+  swLog("Parts " + parts.length);
 
   const endTime = performance.now();
-  swListener.postMessage("Parsed TAR " + (endTime - startTime) + " milliseconds");
+  swLog("Parsed TAR " + (endTime - startTime) + " milliseconds");
   return {files, parts};
 }
 
@@ -124,12 +103,12 @@ async function downloadIfNotCached(cacheName, dir, tarPath) {
     filesReq = await cache.match(filesUrl);
   }
   if (!filesReq) {
-    console.log("Failed to find files list for " + cacheName);
+    swLog("Failed to find files list for " + cacheName);
     return;
   }
   const files = await filesReq.json();
-  console.log("Got a list of files");
-  console.dir(files);
+  swLog("Got a list of files");
+//console.dir(files);
   return {files, cache};
 }
 
@@ -151,7 +130,7 @@ function fetchTar(decompressedStream1) {
         });
         extract.on('finish', function () {
           // all entries read
-          console.log("all entries read " + entriesCount);
+          swLog("all entries read " + entriesCount);
           fulfill(files);
         });
         const nodeStream = new ReadableWebToNodeStream(decompressedStream1);
@@ -196,7 +175,7 @@ function fetchStream2(stream, fulfill, dir, cache) {
     // done  - true if the stream has already given you all its data.
     // value - some data. Always undefined when done is true.
 
-//  console.log("get chunk " + value.length);
+//  swLog("got chunk " + value.length);
 
     if (value) {
       chunks.push(value);
@@ -207,7 +186,7 @@ function fetchStream2(stream, fulfill, dir, cache) {
 
     if (((bytesReceived > PART_SIZE) || done) && bytesReceived) {
       // split logic
-      console.log("Part received partSize=" + bytesReceived + " partOffset=" + partOffset);
+      swLog("Part received partSize=" + bytesReceived + " partOffset=" + partOffset);
       parts.push({size: bytesReceived, offset: partOffset});
 
       const putPromise = cache.put(dir + "/part" + (parts.length - 1), new Response(mergeArrays(chunks)));
@@ -219,7 +198,7 @@ function fetchStream2(stream, fulfill, dir, cache) {
     }
 
     if (done) {
-      console.log("Stream complete");
+      swLog("Stream complete");
       fulfill({parts, putPromises});
       return;
     }
@@ -242,15 +221,15 @@ function removePrefix(str, prefix) {
 
 // Answer by querying the cache. If fail, go to the network.
 self.onfetch = function(event) {
-  console.log("onfetch " + event.request.url);
+  swLog("onfetch " + event.request.url);
   const dir = dirname(self.location.href);
   const path = removePrefix(event.request.url, dir);
   if (!path) {
-    console.error("Failed to fetch url=" + event.request.url + " basePath=" + dir);
+    swLog("ERROR: Failed to fetch url=" + event.request.url + " basePath=" + dir);
     event.respondWith(fetch(event.request).catch(() => new Response("")));
     return;
   }
-  console.log("Fetching " + path);
+  swLog("Fetching " + path);
   // https://circleci-mim-results.s3.eu-central-1.amazonaws.com/PR/4367/236734/elasticsearch_and_cassandra_mnesia.27.0.1-amd64/big.tar.gz
   const chunks = path.split("/");
   if (chunks.length < 5) {
@@ -267,14 +246,14 @@ self.onfetch = function(event) {
   const [fileInArchive] = fileInArchive1.split("#");
   
 
-  console.log("tarPath=" + tarPath + " fileInArchive="+ fileInArchive);
+  swLog("tarPath=" + tarPath + " fileInArchive="+ fileInArchive);
 
   const zipPromise = downloadIfNotCached("CACHE:" + tarPath, dir, tarPath);
   const respPromise = zipPromise.then(function(res) {
     const {cache, files} = res;
     if (files[fileInArchive]) {
       const info = files[fileInArchive];
-      console.log("File info " + JSON.stringify(info));
+      swLog("File info " + JSON.stringify(info));
       return readFile(dir, cache, info.offset, info.size, files.parts).then(function(blob) {
           return new Response(blob, { headers: {
               // As the zip says nothing about the nature of the file, we extract
@@ -291,7 +270,7 @@ self.onfetch = function(event) {
 
   
 
-  swListener.postMessage("onfetch " + event.request.url);
+  swLog("onfetch " + event.request.url);
   event.respondWith(openCache().then(function(cache) {
     return cache.match(event.request).then(function(response) {
 //    return response || fetch(event.request);
@@ -300,7 +279,7 @@ self.onfetch = function(event) {
       try {
         return fetch(event.request);
       } catch (e) {
-        console.log("error in onfetch " + e);
+        swLog("error in onfetch " + e);
         event.respondWith(new Response(""));
       }
     });
@@ -308,9 +287,9 @@ self.onfetch = function(event) {
 };
 
 async function readFile(dir, cache, offset, size, parts) {
-  console.log("readFile " + JSON.stringify({offset, size}));
+  swLog("readFile " + JSON.stringify({offset, size}));
   const chunks = [];
-  console.dir(parts);
+//console.dir(parts);
   for (let i = 0; i < parts.length; i++) {
       if (!size) break;
 
@@ -319,91 +298,25 @@ async function readFile(dir, cache, offset, size, parts) {
       if ((offset >= part.offset) && (offset < nextOffset)) {
         const partReq = await cache.match(dir + "/part" + i);
         if (!partReq) {
-          console.error("Failed to get part " + i);
+          swLog("ERROR: Failed to get part " + i);
           return;
         }
         const ab = await partReq.arrayBuffer();
-        console.log("arrayBuffer " + ab.byteLength);
+        swLog("arrayBuffer " + ab.byteLength);
         const partData = new Uint8Array(ab);
-        console.dir(partData);
-        console.log("matched part " + JSON.stringify({i, part, offset, nextOffset, size}));
+//      console.dir(partData);
+        swLog("matched part " + JSON.stringify({i, part, offset, nextOffset, size}));
         const start = offset - part.offset;
         const leftInPart = part.size - start;
         const end = start + Math.min(size, leftInPart);
-        console.log("slice " + JSON.stringify({start, end, len: partData.length}));
+        swLog("slice " + JSON.stringify({start, end, len: partData.length}));
         chunks.push(partData.slice(start, end)); // start, end
         size = Math.max(0, size - leftInPart);
         offset = nextOffset;
       }
   }
-  console.dir(chunks);
+//console.dir(chunks);
   return mergeArrays(chunks);
-}
-
-/*
-// This wrapper promisifies the zip.js API for reading a zip.
-function getZipReader(blob) {
-    const reader = new zip.ZipReader(new zip.BlobReader(blob));
-    return cacheContents(reader);
-}
-
-// Use the reader to read each of the files inside the zip
-// and put them into the offline cache.
-function cacheContents(reader) {
-  return new Promise(function(fulfill, reject) {
-    reader.getEntries().then(function(entries) {
-      console.log('Installing', entries.length, 'files from zip');
-      var startTime = performance.now();
-
-      swListener.postMessage('Installing ' + entries.length + ' files from zip');
-      Promise.all(entries.map(cacheEntry)).then(function() {
-        var endTime = performance.now();
-        swListener.postMessage("Installed " + (endTime - startTime) + " milliseconds");
-        fulfill();
-      }, reject);
-    });
-  });
-}
-
-// Cache one entry, skipping directories.
-function cacheEntry(entry) {
-  if (entry.directory) { return Promise.resolve(); }
-  self.lastEntry = entry;
-    // The writer specifies the format for the data to be read as.
-    // This case, we want a generic blob as blob is one of the supported
-    // formats for the `Response` constructor.
-    return entry.getData(new zip.BlobWriter()).then(function(data) {
-      return cacheBlob(entry.filename, data);
-  });
-}
-*/
-
-function cacheBlob(cache, filename, blob) {
-//    return openCache().then(function(cache) {
-        var location = getLocation(filename);
-        var response = new Response(blob, { headers: {
-          // As the zip says nothing about the nature of the file, we extract
-          // this information from the file name.
-          'Content-Type': getContentType(filename)
-        } });
-
-//      console.log('-> Caching', location, '(size:', blob.length, 'bytes)');
-//      console.log('-> Caching', location);
-
-        // If the entry is the index, cache its contents for root as well.
-        if (filename === 'index.html') {
-          // Response are one-use objects, as `.put()` consumes the data in the body
-          // we need to clone the response in order to use it twice.
-          cache.put(getLocation(), response.clone());
-        }
-
-        cache.put(location, response);
-//    });
-}
-
-// Return the location for each entry.
-function getLocation(filename) {
-  return location.href.replace(/worker\.js$/, "big/" + (filename || ''));
 }
 
 var contentTypesByExtension = {
