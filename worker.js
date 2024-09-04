@@ -17,6 +17,8 @@ const forceDownload = false;
 //var ZIP_URL = 'https://circleci-mim-results.s3.eu-central-1.amazonaws.com/PR/4367/236734/elasticsearch_and_cassandra_mnesia.27.0.1-amd64/big.tar.gz';
 var ZIP_URL = 'http://localhost:8000/big3.tar.gz';
 
+const ZIP_PREFIX = 'https://circleci-mim-results.s3.eu-central-1.amazonaws.com/';
+
 
 const swListener = new BroadcastChannel('swListener');
 swListener.postMessage("Importing scripts");
@@ -84,10 +86,12 @@ function dirname(path) {
   return path.substring(0, path.lastIndexOf("/")+1);
 }
 
-async function downloadZip(dir, cache) {
+async function downloadZip(dir, cache, tarPath) {
   const startTime = performance.now();
   swListener.postMessage("Downloading zip");
-  const response = await fetch(ZIP_URL);
+//  const response = await fetch(ZIP_URL);
+
+  const response = await fetch(ZIP_PREFIX + tarPath);
   const body = await response.body;
   swListener.postMessage("Downloaded zip");
   const ds = new DecompressionStream("gzip");
@@ -108,12 +112,12 @@ async function downloadZip(dir, cache) {
   return {files, parts};
 }
 
-async function downloadIfNotCached(cacheName, dir) {
+async function downloadIfNotCached(cacheName, dir, tarPath) {
   const filesUrl = dir + "/files.json";
   const cache = await openCache(cacheName);
   let filesReq = await cache.match(filesUrl);
   if (forceDownload || !filesReq) {
-    const zip = await downloadZip(dir, cache);
+    const zip = await downloadZip(dir, cache, tarPath);
     // Put parts also in the same request, so 1 request instead of two needed
     zip.files.parts = zip.parts;
     await cache.put(filesUrl, new Response(JSON.stringify(zip.files)));
@@ -252,7 +256,7 @@ self.onfetch = function(event) {
 
   console.log("tarPath=" + tarPath + " fileInArchive="+ fileInArchive);
 
-  const zipPromise = downloadIfNotCached("CACHE:" + tarPath, dir);
+  const zipPromise = downloadIfNotCached("CACHE:" + tarPath, dir, tarPath);
   const respPromise = zipPromise.then(function(res) {
     const {cache, files} = res;
     if (files[fileInArchive]) {
