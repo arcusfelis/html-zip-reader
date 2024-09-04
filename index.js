@@ -13,7 +13,7 @@ var $ = document.querySelector.bind(document); // eslint-disable-line id-length
 // the application is installed.
 navigator.serviceWorker.getRegistration().then(function(registration) {
   if (registration && registration.active) {
-    showImagesSection();
+//  okk
   }
 });
 
@@ -22,7 +22,7 @@ navigator.serviceWorker.getRegistration().then(function(registration) {
 navigator.serviceWorker.oncontrollerchange = function() {
   if (navigator.serviceWorker.controller) {
     logInstall('The application has been installed');
-    showImagesSection();
+//  okk
   }
 };
 
@@ -59,18 +59,6 @@ $('#uninstall').onclick = function() {
       });
   });
 };
-
-// To load an image is no more than assiging the correct URL to
-// the displayer.
-$('#load-image').onclick = function() {
-  $('img').src = $('select').value;
-};
-
-// A bunch of helpers to control the UI.
-function showImagesSection() {
-  $('#images').hidden = false;
-  $('#install-notice').hidden = true;
-}
 
 function logInstall(what) {
   log(what, 'Install');
