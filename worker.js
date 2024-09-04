@@ -243,8 +243,9 @@ self.onfetch = function(event) {
   const fileInArchive0 = rest.join("/");
   // Ignore labels #
   const [fileInArchive1] = fileInArchive0.split("?");
-  const [fileInArchive] = fileInArchive1.split("#");
-  
+  let [fileInArchive] = fileInArchive1.split("#");
+
+  if (!fileInArchive) fileInArchive = "index.html";
 
   swLog("tarPath=" + tarPath + " fileInArchive="+ fileInArchive);
 
