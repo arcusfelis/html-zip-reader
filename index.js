@@ -22,6 +22,9 @@ navigator.serviceWorker.getRegistration().then(function(registration) {
   if (registration && registration.active) {
     showControl();
   }
+  else if (autoMode) {
+    doInstall();
+  }
 });
 
 // During installation, once the service worker is active, we shows
@@ -85,6 +88,3 @@ function log(what, tag) {
   $('#results').textContent += label + ' ' + what + '\n';
 }
 
-if (autoMode) {
-  doInstall();
-}
