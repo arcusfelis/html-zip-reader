@@ -32,7 +32,7 @@ navigator.serviceWorker.getRegistration().then(function(registration) {
 navigator.serviceWorker.oncontrollerchange = function() {
   if (navigator.serviceWorker.controller) {
     logInstall('The application has been installed');
-    showControl();
+    showControl(true);
   }
 };
 
@@ -68,10 +68,10 @@ $('#uninstall').onclick = function() {
 };
 
 // A bunch of helpers to control the UI.
-function showControl() {
+function showControl(doRedirect) {
   $('#control').hidden = false;
   $('#install-notice').hidden = true;
-  if (autoMode) document.location.reload();
+  if (autoMode && doRedirect) document.location.reload();
 }
 
 function logInstall(what) {
