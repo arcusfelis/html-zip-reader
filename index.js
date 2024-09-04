@@ -19,7 +19,7 @@ var $ = document.querySelector.bind(document); // eslint-disable-line id-length
 // the application is installed.
 navigator.serviceWorker.getRegistration().then(function(registration) {
   if (registration && registration.active) {
-//  okk
+    showControl();
   }
 });
 
@@ -28,7 +28,7 @@ navigator.serviceWorker.getRegistration().then(function(registration) {
 navigator.serviceWorker.oncontrollerchange = function() {
   if (navigator.serviceWorker.controller) {
     logInstall('The application has been installed');
-//  okk
+    showControl();
   }
 };
 
@@ -60,6 +60,12 @@ $('#uninstall').onclick = function() {
       });
   });
 };
+
+// A bunch of helpers to control the UI.
+function showControl() {
+  $('#control').hidden = false;
+  $('#install-notice').hidden = true;
+}
 
 function logInstall(what) {
   log(what, 'Install');
