@@ -16,7 +16,6 @@ const SCOPE = "https://esl.github.io/html-zip-reader";
 
 importScripts(SCOPE + '/lib/tar-web.js');
 importScripts(SCOPE + '/lib/readable-web-to-node-stream.js');
-importScripts(SCOPE + '/lib/blob-stream.js');
 
 //zip.configure({useWebWorkers: false, useCompressionStream: true});
 swListener.postMessage("Scripts imported");
