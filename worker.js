@@ -145,7 +145,7 @@ function fetchTar(decompressedStream1) {
             stream.resume();
             return;
           }
-          files[header.name] = {offset: extract._offset, size: header.size};
+          files[prepareFileName(header.name)] = {offset: extract._offset, size: header.size};
           next(); // ready for next entry
           stream.resume(); // just auto drain the stream
         });
@@ -157,6 +157,16 @@ function fetchTar(decompressedStream1) {
         const nodeStream = new ReadableWebToNodeStream(decompressedStream1);
         nodeStream.pipe(extract);
    });
+}
+
+// Remove prefix from name
+// filename looks like ./all_runs.html
+function prepareFileName(str) {
+  const prefix = "./";
+  if (str.startsWith(prefix)) {
+    return str.slice(prefix.length);
+  }
+  return str;
 }
 
 
