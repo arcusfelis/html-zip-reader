@@ -71,7 +71,10 @@ $('#uninstall').onclick = function() {
 function showControl(doRedirect) {
   $('#control').hidden = false;
   $('#install-notice').hidden = true;
-  if (autoMode && doRedirect) document.location.reload();
+  if (autoMode && doRedirect) {
+    logInstall("autoredirect");
+    document.location.reload();
+  }
 }
 
 function logInstall(what) {
