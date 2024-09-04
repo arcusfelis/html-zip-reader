@@ -1,3 +1,10 @@
+let worker_path = 'https://arcusfelis.github.io/html-zip-reader/worker.js';
+
+console.log("Origin " + document.location.origin);
+
+if (document.location.origin == 'http://localhost:8000')
+  worker_path = "http://localhost:8000/worker.js";
+
 // A convenient shortcut for `document.querySelector()`
 var $ = document.querySelector.bind(document); // eslint-disable-line id-length
 
@@ -27,7 +34,7 @@ swListener.onmessage = function(e) {
 //console.log('swListener Received', e.data);
     logInstall('from sw: ' + e.data);
 };
-  navigator.serviceWorker.register('https://arcusfelis.github.io/html-zip-reader/worker.js').then(function() {
+  navigator.serviceWorker.register(worker_path).then(function() {
     logInstall('Installing...');
   }).catch(function(error) {
     logInstall('An error happened during installing the service worker:');

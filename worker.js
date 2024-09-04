@@ -9,7 +9,10 @@
 
 //var ZIP_URL = './big3.tar.gz';
 //var ZIP_URL = './ct_report.tar.gz';
-var ZIP_URL = 'https://circleci-mim-results.s3.eu-central-1.amazonaws.com/PR/4367/236734/elasticsearch_and_cassandra_mnesia.27.0.1-amd64/big.tar.gz';
+//var ZIP_URL = 'https://circleci-mim-results.s3.eu-central-1.amazonaws.com/PR/4367/236734/elasticsearch_and_cassandra_mnesia.27.0.1-amd64/big.tar.gz';
+var ZIP_URL = 'http://localhost:8000/big.tar.gz';
+
+
 const swListener = new BroadcastChannel('swListener');
 swListener.postMessage("Importing scripts");
 
@@ -63,6 +66,7 @@ return mergedArray;
 // During installation, extend the event to recover the package
 // for this recipe and install into an offline cache.
 self.oninstall = function(event) {
+  console.log("worker.path=" + self.location.href);
 /*
   caches.keys().then(function(names) {
       for (let name of names)
@@ -88,61 +92,78 @@ self.oninstall = function(event) {
         swListener.postMessage("Downloaded zip");
         const ds = new DecompressionStream("gzip");
         const decompressedStream = body.pipeThrough(ds);
-const extract = tar.extract();
-//const files = [];
-let entriesCount = 0;
+        const extract = tar.extract();
+        const files = {};
+        let entriesCount = 0;
+        
+        extract.on('entry', function (header, stream, next) {
+          entriesCount++;
+          if (header.type == "directory") {
+            next();
+            stream.resume();
+            return;
+          }
+          files[header.name] = extract._offset;
+          next(); // ready for next entry
+          stream.resume(); // just auto drain the stream
+        });
+        extract.on('finish', function () {
+          var endTime = performance.now();
+          swListener.postMessage("Installed " + (endTime - startTime) + " milliseconds");
+          // all entries read
+          console.log("all entries read " + entriesCount);
+          skip();
+        });
+        
+        const [decompressedStream1, decompressedStream2] = decompressedStream.tee();
+        const nodeStream = new ReadableWebToNodeStream(decompressedStream1);
+        nodeStream.pipe(extract);
 
-extract.on('entry', function (header, stream, next) {
-if (header.type == "directory") {
-  next();
-  stream.resume();
-  return;
-}
-/*
-console.log("entry " + header.name);
-console.dir(header);
-*/
-
-  // header is the tar header
-  // stream is the content body (might be an empty stream)
-  // call next when you are done with this entry
-
-  const stream2 = stream.pipe(BlobStream());
-  stream2.on('finish', function () {
- // const blob = stream2.toBlob();
- // files.push({header, blob});
-//  files.push({header});
-//  files.push({header, chunks: mergeArrays(stream2._chunks)});
-//  cacheBlob(header.name, blob).then(next); // ready for next entry
-
-//console.log(header.name);
-    cacheBlob(cache, header.name, mergeArrays(stream2._chunks)); // ready for next entry
-    entriesCount++;
-    next(); // ready for next entry
-  });
-
-//  next(); // ready for next entry
-//files.push({header});
-
-//    next(); // ready for next entry
-  stream.resume(); // just auto drain the stream
-
-});
-
-extract.on('finish', function () {
-        var endTime = performance.now();
-        swListener.postMessage("Installed " + (endTime - startTime) + " milliseconds");
-  // all entries read
-console.log("all entries read " + entriesCount);
-skip();
-});
-
-const nodeStream = new ReadableWebToNodeStream(decompressedStream);
-nodeStream.pipe(extract);
-
+        fetchStream(decompressedStream2);
       })
   );
 };
+
+function fetchStream(stream) {
+  const reader = stream.getReader();
+  let bytesReceived = 0;
+  let absOffset = 0;
+  let partOffset = 0;
+
+  const PART_SIZE = 1000000;
+  let PART_NUM = 0;
+  const chunks = [];
+
+  // read() returns a promise that resolves
+  // when a value has been received
+  reader.read().then(function processChunk({ done, value }) {
+    // Result objects contain two properties:
+    // done  - true if the stream has already given you all its data.
+    // value - some data. Always undefined when done is true.
+    if (done) {
+      console.log("Stream complete");
+      return;
+    }
+
+    // value for fetch streams is a Uint8Array
+    bytesReceived += value.length;
+    absOffset += value.length;
+//  console.log("get chunk " + value.length);
+
+    chunks.push(value);
+
+    if (bytesReceived > PART_SIZE) {
+      // split logic
+      console.log("Part received partSize=" + bytesReceived + " partOffset=" + partOffset);
+      chunks.length = 0;
+      bytesReceived = 0;
+      partOffset = absOffset;
+    }
+
+    // Read some more, and call this function again
+    return reader.read().then(processChunk);
+  });
+}
 
 // Control the clients as soon as possible.
 self.onactivate = function(event) {
