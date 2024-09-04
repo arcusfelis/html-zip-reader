@@ -231,12 +231,14 @@ self.onfetch = function(event) {
   }
   swLog("Fetching " + path);
   // https://circleci-mim-results.s3.eu-central-1.amazonaws.com/PR/4367/236734/elasticsearch_and_cassandra_mnesia.27.0.1-amd64/big.tar.gz
-  const chunks = path.split("/");
+  // Remove duplicate slashes
+  const chunks = path.split("/").filter((x) => !!x.length);
   if (chunks.length < 5) {
     swLog("not enough chunks");
     event.respondWith(fetch(event.request));
     return;
   }
+  swLog("Split path " + JSON.stringify(chunks));
   const [PR, PR_NUM, JOB_ID, JOB_NAME, FILENAME] = chunks;
   const tarPath = [PR, PR_NUM, JOB_ID, JOB_NAME, FILENAME].join("/");
 
@@ -247,9 +249,10 @@ self.onfetch = function(event) {
   const [fileInArchive] = fileInArchive1.split("#");
 
   if (!fileInArchive) {
-    swLog("redirect to index.html");
+    const to = dir + "/" + tarPath + "/index.html";
+    swLog("redirect to " + to);
     // Redirect so paths for relative files work correctly
-    event.respondWith(Response.redirect(event.request.url + "/index.html"));
+    event.respondWith(Response.redirect(to));
     return;
   }
 
