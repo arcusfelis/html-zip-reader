@@ -1,5 +1,11 @@
 let worker_path = 'https://arcusfelis.github.io/html-zip-reader/worker.js';
 
+const swListener = new BroadcastChannel('swListener');
+swListener.onmessage = function(e) {
+//console.log('swListener Received', e.data);
+    logInstall('from sw: ' + e.data);
+};
+
 console.log("Origin " + document.location.origin);
 
 if (document.location.origin == 'http://localhost:8000')
@@ -29,11 +35,6 @@ navigator.serviceWorker.oncontrollerchange = function() {
 // Install the worker is no more than registering. It is in charge of
 // downloading the package, decompress and cache the resources.
 $('#install').onclick = function() {
-const swListener = new BroadcastChannel('swListener');
-swListener.onmessage = function(e) {
-//console.log('swListener Received', e.data);
-    logInstall('from sw: ' + e.data);
-};
   navigator.serviceWorker.register(worker_path).then(function() {
     logInstall('Installing...');
   }).catch(function(error) {
