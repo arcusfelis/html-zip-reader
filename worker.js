@@ -67,7 +67,7 @@ function swLog(msg) {
 
 async function downloadZip(dir, cache, tarPath) {
   const startTime = performance.now();
-  swLog("Downloading zip");
+  swLog("Downloading zip tarPath=" + tarPath);
 //  const response = await fetch(ZIP_URL);
 
   const response = await fetch(ZIP_PREFIX + tarPath);
