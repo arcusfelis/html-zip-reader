@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Cache from tar.gz - ServiceWorker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: monospace;
+      font-size: 1rem;
+      white-space: pre-wrap;
+    }
+    p {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <section id="install-notice">
+    Install installs a service worker.
+    After that, you can access pages in the archive.
+    Each tar.gz would be downloaded once on first access and would be available
+    offline.
+    <button id="install">Install</button>
+  </section>
+
+  <section id="control" hidden>
+    Now the browser is serving a service worker.
+    You can see logs on this page.
+    <button id="uninstall">Uninstall</button>
+  </section>
+
+  <pre id="results"></pre>
+
+<script src="https://esl.github.io/html-zip-reader/index.js"></script>
+<!--
+<script src="http://localhost:8000/index.js"></script>
+-->
+</body>
+</html>
