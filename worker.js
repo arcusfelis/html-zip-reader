@@ -245,7 +245,7 @@ self.onfetch = function(event) {
   const fileInArchive0 = rest.join("/");
   // Ignore labels #
   const [fileInArchive1] = fileInArchive0.split("?");
-  const [fileInArchive] = fileInArchive1.split("#");
+  let [fileInArchive] = fileInArchive1.split("#");
 
   if (!fileInArchive) {
     const to = dir + "/" + tarPath + "/index.html";
@@ -254,6 +254,11 @@ self.onfetch = function(event) {
     event.respondWith(Response.redirect(to));
     return;
   }
+
+  // Remove URL encoding:
+  // decodeURIComponent("ct_run.test%4080fe34622610.2024-09-05_09.15.10/index.html")
+  // 'ct_run.test@80fe34622610.2024-09-05_09.15.10/index.html'
+  fileInArchive = decodeURIComponent(fileInArchive);
 
   swLog("tarPath=" + tarPath + " fileInArchive="+ fileInArchive);
 
